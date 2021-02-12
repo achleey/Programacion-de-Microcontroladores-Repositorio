@@ -54,12 +54,12 @@ clrf PORTA	;Initializing PORTA
 banksel ANSEL
 clrf ANSEL	;Initializing ANSEL, digital Input
 banksel TRISA
-bsf TRISA, 0	;Pin RA0 configured as input
-bsf TRISA, 1	;Pin RA1 configured as input
+bcf TRISA, 0	;Pin RA0 configured as output
+bcf TRISA, 1	;Pin RA1 configured as output
 bcf TRISA, 2	;Pin RA2 configured as output
 bcf TRISA, 3	;Pin RA3 configured as output
-bcf TRISA, 4	;Pin RA4 configured as output
-bcf TRISA, 5	;Pin RA5 configured as output
+bsf TRISA, 4	;Pin RA4 configured as input
+bsf TRISA, 5	;Pin RA5 configured as input
 bsf TRISA, 6	;Pin RA6 configured as input (Osicllator)
 bsf TRISA, 7	;Pin RA7 configured as input
     
@@ -82,28 +82,28 @@ banksel ANSELH
 clrf ANSELH	;Initializing ANSELH, digital input
 banksel TRISB
 bsf TRISB, 0	;Pin RB0 configured as input
-bcf TRISC, 6	;Pin RC6 configured as output
-bcf TRISC, 7	;Pin RC7 configured as output
 banksel PORTD
 clrf PORTD	;Initializing PORTD
 banksel TRISD
 bcf TRISD, 0	;Pin RD0 configured as output
 bcf TRISD, 1	;Pin RD1 configured as output
+bcf TRISD, 2
+bcf TRISD, 3
 
-;CARRY/OVERFLOW	  
-bcf TRISB, 1	;Pin RB1 configured as output
+;CARRY/OVERFLOW	 
+bcf TRISD, 4	;Pin RB1 configured as output
 
 ;MAIN LOOP 
 loop: 
     
 ;INCREMENT COUNTER 1
 banksel PORTA	    ;Make sure we select the bank where the register is located
-btfss  PORTA, 0	    ;If the pushbutton is not pressed, the following instruction is not executed.
+btfss  PORTA, 4	    ;If the pushbutton is not pressed, the following instruction is not executed.
 call subrutine1	    ;Call the debounce 1 which also works as the counter
     
 ;DECREMENT COUNTER 1    
 banksel PORTA
-btfss PORTA, 1	    ;If the pushbutton is not pressed, the following instruction is not executed	    
+btfss PORTA, 5	    ;If the pushbutton is not pressed, the following instruction is not executed	    
 call subrutine2	    ;Call the debounce 2 which also contains the counter
     
 ;INCREMENT COUNTER 2
@@ -115,21 +115,26 @@ call subrutine3
 banksel PORTC
 btfss PORTC, 5
 call subrutine4
+    
+;ADDITION
+banksel PORTB
+btfss PORTB, 0
+call addition
 goto loop
     
 ;SUBRUTINES
 subrutine1: 
     banksel PORTA	;Make sure we select the bank where the register is located
-    btfss PORTA, 0	;Check if the pushbutton is pressed
+    btfss PORTA, 4	;Check if the pushbutton is pressed
     goto $-1		;Go back to decfsz until its value is cero
-    incf PORTA		;Proceed to increment the ports and show it through the LED's
+    incf PORTA, 1	;Proceed to increment the ports and show it through the LED's
     return		;return to mainloop
     
 subrutine2:
     banksel PORTA
-    btfss PORTA, 1
+    btfss PORTA, 5
     goto $-1
-    decf PORTA
+    decf PORTA, 1
     return
  
 subrutine3:
@@ -143,7 +148,16 @@ subrutine4:
     banksel PORTC
     btfss PORTC, 5
     goto $-1
-    decf PORTC
+    decf PORTC 
+    return
+    
+addition: 
+    banksel PORTB
+    btfss PORTB, 0
+    movf PORTC, 0
+    banksel PORTD
+    addwf PORTA, 0
+    movwf PORTD, 1
     return
     
 ;delay:
