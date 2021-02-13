@@ -2561,7 +2561,9 @@ call subroutine4 ;Call the Subroutine 4
 banksel PORTB
 btfss PORTB, 0 ;If the pushbutton is not pressed, the following instruction is not executed
 call addition ;Call addition subroutine
+btfss PORTB, 0 ;If a carry didn't ocurre, then skip the next instruction 
 call carry ;Call the carry subroutine
+
 goto loop
 
 ;SUBRUTINES
@@ -2596,6 +2598,7 @@ subroutine4:
 addition:
     banksel PORTB
     btfss PORTB, 0 ;If the pushbutton is not pressed, the following instruction is not executed
+    goto $-1
     movf PORTC, 0 ;Move data stored in PORTC to W
     banksel PORTD
     addwf PORTA, 0 ;Add data stored in w to f (PORTA), then save in W
@@ -2604,9 +2607,9 @@ addition:
 
 carry:
     banksel PORTD
-    btfss STATUS, 0
-    goto $-1
-    movf PORTD, 1
-    return
+    btfss STATUS, 0 ;Test if bit 0 in STATUS REG = 1. If yes, then a carry-out from the MSB occurred
+    goto $-1 ;Debounce
+    movf PORTD, 1 ;Move data stored in STATUS to PORTD
+    return ;return to mainloop
 
 END
