@@ -202,6 +202,7 @@ alarma:
     call subrutina	;Si es así, llamar a subrutina para encender alarma
     return
 
+    
 subrutina:
     bsf TRISA, 0	;Encender alarma (LED ubicada en TRIS)
     clrf PORTC		;Limpiar contador
