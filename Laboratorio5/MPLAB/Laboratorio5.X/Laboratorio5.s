@@ -315,25 +315,25 @@ main:
     btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente chequeo	    
     movwf residuo	;mover resultado a residuo
     btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente instruccion
-    goto $-7		;Repetir la suma
+    goto $-7		;Repetir la division
     
     clrf decenas	;Limpiando variable decenas
     movlw 10		;Mover 10 a W
     subwf residuo,0	;Restar residuo y W
-    btfsc STATUS, 0	;
-    incf decenas
-    btfsc STATUS, 0
-    movwf residuo
-    btfsc STATUS, 0
-    goto $-7
+    btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente chequeo
+    incf decenas	;incrementar decenas
+    btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente chequeo
+    movwf residuo	;Mover resultado a residuo
+    btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente instruccion
+    goto $-7		;Repetir la division
 
-    clrf unidades
-    movlw 1
-    subwf residuo 
-    btfsc STATUS, 0
-    incf unidades
-    btfss STATUS, 0
-    return
-    goto $-6
+    clrf unidades	;Limpiando variable unidades
+    movlw 1		;Mover 1 a W
+    subwf residuo	;Restar residuo y W
+    btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente chequeo
+    incf unidades	;incrementar unidades
+    btfss STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente instruccion
+    return		;Regresar a main loop
+    goto $-6		;Repetir la division
     
 END
