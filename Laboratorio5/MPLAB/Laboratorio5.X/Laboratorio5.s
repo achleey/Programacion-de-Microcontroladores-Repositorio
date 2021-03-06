@@ -15,7 +15,7 @@ PROCESSOR 16F887
 ;CONFIG1
 CONFIG FOSC=INTRC_NOCLKOUT ;Oscilador interno
 CONFIG WDTE=OFF	    ;WDT desactivado
-CONFIG PWRTE=ON	    ;PWRT activado
+CONFIG PWRTE=OFF	    ;PWRT activado
 CONFIG MCLRE=OFF    ;PIN MCLR usado como I/O
 CONFIG CP=OFF	    ;Protección de código desactivada
 CONFIG CPD=OFF	    ;Proteción de datos desactivada
@@ -30,19 +30,20 @@ CONFIG BOR4V=BOR40V ;Reset si Vdd < 4V (BOR21v=2.1V)
 
 ;VARIABLES
     PSECT udata_bank0
-    W_TEMP: DS 1	;Registro temporal para W
-    STATUS_TEMP: DS 1	;Registro temporal para STATUS 
+    separador: DS 1	;Variable para separar datos de contador
+    residuo: DS 1	;Variable para guardar residuo de resta
+    decenas: DS 1	;Variable para guardar las decenas de la división
+    unidades: DS 1	;Variable para guardar las unidades de la división
+    centenas: DS 1	;Variable para guardar las centenas de la división
+    display2: DS 3	;Variable para mostrar resultado de división
     
     PSECT udata_shr	;Memoria común
+    W_TEMP: DS 1	;Registro temporal para W
+    STATUS_TEMP: DS 1	;Registro temporal para STATUS 
     multiplexado: DS 1	;Variable para hacer multiplexado
-    separador: DS 1	;Variable para separar datos de contador
     nibble: DS 2	;Variable que almacenará los nibbles
-    display: DS 5	;Variable que se usará para mostrar el valor en display
-    residuo1: DS 1
-    decenas: DS 1
-    unidades: DS 1
-    centenas: DS 1
-    
+    display: DS 2	;Variable que se usará para mostrar el valor en display
+        
 ;VECTOR RESET 
     PSECT resVect, class=code, abs, delta=2
     ORG 00h		;Posición para reset
@@ -144,6 +145,9 @@ main:
 	;DISPLAY 2
 	movlw 00000000B		;PORTD configurado como output
 	movwf TRISD 
+	bcf TRISB, 0		;Pin RB0 configurado como output
+	bcf TRISB, 1		;Pin RB1 configurado como output
+	bcf TRISB, 6		;Pin RB6 configurado como output
 
     ;CONFIGURACIÓN DE INTERRUPCIONES
     bsf INTCON, 7		;Activando interrupciones no periféricas
@@ -180,9 +184,9 @@ main:
 	    
 ;MAIN LOOP	
     loop:
-    call separacion
-    call traductor 
-    call division
+    call separacion	;Llamando subrutina de separación
+    call traductor	;Llamando subrutina de traduccion
+    call division	;Llamando subrutina de división
     goto loop
     
 ;SUBRUTINAS
@@ -196,94 +200,101 @@ main:
     return
     
     separacion:
-    movf PORTA, 0
-    andlw 0x0f
-    movwf nibble
-    swapf PORTA, 0
-    andlw 0x0f
-    movwf nibble+1
+    movf PORTA, 0	;Mover datos en PORTA a W
+    andlw 0x0f		;Tomar solo la parte baja
+    movwf nibble	;Mover parte baja a nibble
+    swapf PORTA, 0	;Cambiar low nibble y high nibble de lugar
+    andlw 0x0f		;Tomar solo la parte baja (parte alta)
+    movwf nibble+1	;Mover parte alta a nibble+1
     return
     
     traductor:
-    movf nibble, 0
-    call Convertidor
-    movwf display
-    movf nibble+1, 0
-    call Convertidor
-    movwf display+1
-    movf centenas, 0
-    call Convertidor
-    movwf display+2
-    movf decenas
-    call Convertidor
-    movwf display+3
-    movf unidades
-    call Convertidor
-    movwf display+4
+    movf nibble, 0	;Mover datos en nibble a W
+    call Convertidor	;Llamar tabla para traducción
+    movwf display	;Mover a variable display para desplegarlo después
+    movf nibble+1, 0	;Mover datos en nibble+1 a W
+    call Convertidor	;Llamar tabla para traducción
+    movwf display+1	;Mover a variable display+1 para desplegarlo después
+    
+    movf centenas, 0	;Mover contenido de centenas a W
+    call Convertidor	;Llamar tabla para traducción
+    movwf display2	;Mover a variable display2 para desplegarlo después
+    movf decenas, 0	;Mover contenido de centenas a W
+    call Convertidor	;Llamar tabla para traducción
+    movwf display2+1	;Mover a variable display2+1 para desplegarlo después
+    movf unidades, 0	;Mover contenido de unidades a W
+    call Convertidor	;Llamar tabla para traducción
+    movwf display2+2	;Mover a variable display2+1 para desplegarlo después
     return
     
     int_timer0:
     call reinicio_timer0    ;Reiniciar el Timer0
-    bcf TRISB, 2
-    bcf TRISB, 3
-    btfsc multiplexado, 0
+    bcf PORTB, 2	    ;Limpiando pines de transistores
+    bcf PORTB, 3
+    bcf PORTB, 0
+    bcf PORTB, 1
+    bcf PORTB, 6
+    btfsc multiplexado, 0	;Si pin 0 esta en 1, ir a display2A
     goto display2A
-    
-    bcf TRISB, 0
-    bcf TRISB, 1
-    bcf TRISB, 6
-    btfsc multiplexado, 1    
+    btfsc multiplexado, 1	;Si pin 1 esta en 1, ir a display3B
     goto display3B
-    btfsc multiplexado, 2
+    btfsc multiplexado, 2	;Si pin 2 esta en 1, ir a display2B
     goto display2B
-    btfsc multiplexado, 3
+    btfsc multiplexado, 3	;Si pin 3 esta en 1, ir a display1B
     goto display1B
     
     display1A: 
-    movf display, 0
-    movwf PORTC
-    bsf PORTB, 3
+    movf display, 0		;Mover datos en display a W
+    movwf PORTC			;Mover display a PORTC
+    bsf PORTB, 3		;Encender pin de transistor
     goto toggle
     
     display2A:
-    movf display+1, 0		
-    movwf PORTC
-    bsf PORTB, 2
-    
-    display1B:
-    movf display+2
-    movwf PORTD
-    bsf TRISB, 1
-    goto toggle3
-    
-    display2B:
-    movf display+3,0
-    movwf PORTD
-    bsf TRISB, 6
-    goto toggle2
-    
-    display3B:
-    movf display+4,0
-    movwf PORTD
-    bsf TRISB, 0
+    movf display+1, 0		;Mover datos en display+1 a W
+    movwf PORTC			;Mover display+1 a PORTC
+    bsf PORTB, 2		;Encender pin de transistor
     goto toggle1
     
+    display1B:
+    movf display2		;Mover datos en display2 a W
+    movwf PORTD			;Mover display2 a PORTD
+    bsf PORTB, 6		;Encender pin de transistor
+    goto toggle4
+    
+    display2B:
+    movf display2+1,0		;Mover datos en display2+1 a W
+    movwf PORTD			;Mover display2+1 a PORTD   
+    bsf PORTB, 1		;Encender pin de transistor
+    goto toggle3
+    
+    display3B:
+    movf display2+2,0		;Mover datos en display2+2 a W
+    movwf PORTD			;Mover display2+2 a PORTD 
+    bsf PORTB, 0		;Encender pin de transistor
+    goto toggle2
+    
     toggle:
-    movlw 1
-    xorwf multiplexado, 1	
+    movlw 00000001B		    ;Mover literal a W
+    xorwf multiplexado, 1	    ;Hacer xor para encender los displays alternando
+    return
     
     toggle1:
-    movlw 00000110B
-    xorwf multiplexado, 1
+    movlw 00000011B		    ;Mover literal a W
+    xorwf multiplexado, 1	    ;Hacer xor para encender los displays alternando
     return
     
     toggle2:
-    movlw 00001100B
-    xorwf multiplexado, 1
+    movlw 00000110B		    ;Hacer xor para encender los displays alternando
+    xorwf multiplexado, 1	    ;Hacer xor para encender los displays alternando
     return
     
     toggle3:
-    clrf multiplexado
+    movlw 00001100B		    ;Hacer xor para encender los displays alternando
+    xorwf multiplexado, 1	    ;Hacer xor para encender los displays alternando
+    return
+    
+    toggle4:
+    clrf multiplexado		    ;limpiar valores en bandera para multiplexado
     return
 
     reinicio_timer0:
@@ -294,25 +305,35 @@ main:
     return
 
     division:
-    movlw 100				    
-    subwf PORTA, 0
-    btfss STATUS, 0
-    incf centenas,1			    	    
-    btfss STATUS, 0
-    goto $-5
-    movwf residuo1, 1
-    movlw 100
-    addwf residuo1			    
+    clrf centenas	;Limpiando variable centenas
+    movf PORTA, 0	;Mover datos en PORTA a W
+    movwf residuo	;Mover W a residuo
+    movlw 100		;Mover 100 a W	   
+    subwf residuo, 0	;Restar residuo y W	
+    btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente chequeo
+    incf centenas	;incrementar centenas
+    btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente chequeo	    
+    movwf residuo	;mover resultado a residuo
+    btfsc STATUS, 0	;Si la bandera no se ha levantado, saltar a siguiente instruccion
+    goto $-7		;Repetir la suma
     
-    movlw 10				  
-    subwf residuo1, 0
+    clrf decenas	;Limpiando variable decenas
+    movlw 10		;Mover 10 a W
+    subwf residuo,0	;Restar residuo y W
+    btfsc STATUS, 0	;
+    incf decenas
+    btfsc STATUS, 0
+    movwf residuo
+    btfsc STATUS, 0
+    goto $-7
+
+    clrf unidades
+    movlw 1
+    subwf residuo 
+    btfsc STATUS, 0
+    incf unidades
     btfss STATUS, 0
-    incf decenas, 1			    
-    btfss STATUS, 0
-    goto $-5
-    movwf unidades
-    movlw 10
-    addwf unidades
     return
+    goto $-6
     
 END

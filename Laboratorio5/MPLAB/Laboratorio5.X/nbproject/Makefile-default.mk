@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=Laboratorio5.s Macros.s
+SOURCEFILES_QUOTED_IF_SPACED=Laboratorio5.s
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/Laboratorio5.o ${OBJECTDIR}/Macros.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/Laboratorio5.o.d ${OBJECTDIR}/Macros.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/Laboratorio5.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/Laboratorio5.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/Laboratorio5.o ${OBJECTDIR}/Macros.o
+OBJECTFILES=${OBJECTDIR}/Laboratorio5.o
 
 # Source Files
-SOURCEFILES=Laboratorio5.s Macros.s
+SOURCEFILES=Laboratorio5.s
 
 
 
@@ -102,14 +102,6 @@ ${OBJECTDIR}/Laboratorio5.o: Laboratorio5.s  nbproject/Makefile-${CND_CONF}.mk
 	Laboratorio5.s \
 	 -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
 	
-${OBJECTDIR}/Macros.o: Macros.s  nbproject/Makefile-${CND_CONF}.mk 
-	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/Macros.o 
-	${MP_AS} -mcpu=PIC16F887 -c \
-	-o ${OBJECTDIR}/Macros.o \
-	Macros.s \
-	 -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
-	
 else
 ${OBJECTDIR}/Laboratorio5.o: Laboratorio5.s  nbproject/Makefile-${CND_CONF}.mk 
 	@${MKDIR} "${OBJECTDIR}" 
@@ -117,14 +109,6 @@ ${OBJECTDIR}/Laboratorio5.o: Laboratorio5.s  nbproject/Makefile-${CND_CONF}.mk
 	${MP_AS} -mcpu=PIC16F887 -c \
 	-o ${OBJECTDIR}/Laboratorio5.o \
 	Laboratorio5.s \
-	 -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
-	
-${OBJECTDIR}/Macros.o: Macros.s  nbproject/Makefile-${CND_CONF}.mk 
-	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/Macros.o 
-	${MP_AS} -mcpu=PIC16F887 -c \
-	-o ${OBJECTDIR}/Macros.o \
-	Macros.s \
 	 -msummary=+mem,-psect,-class,-hex,-file,-sha1,-sha256,-xml,-xmlfull -fmax-errors=20 -mwarn=0 -xassembler-with-cpp
 	
 endif
