@@ -231,11 +231,11 @@ main:
     bcf TRISB, 6
     btfsc multiplexado, 0
     goto display2A
-    btfsc multiplexado, 3    
+    btfsc multiplexado, 1    
     goto display3B
     btfsc multiplexado, 2
     goto display2B
-    btfsc multiplexado, 1
+    btfsc multiplexado, 3
     goto display1B
     
     display1A: 
@@ -270,14 +270,17 @@ main:
     toggle:
     movlw 1
     xorwf multiplexado, 1	
+
     
     toggle1:
     movlw 00000110B
     xorwf multiplexado, 1
+    return
     
     toggle2:
     movlw 00001100B
     xorwf multiplexado, 1
+    return
     
     toggle3:
     clrf multiplexado
