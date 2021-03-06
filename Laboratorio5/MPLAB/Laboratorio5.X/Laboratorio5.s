@@ -224,13 +224,14 @@ main:
     
     int_timer0:
     call reinicio_timer0    ;Reiniciar el Timer0
-    bcf TRISB, 0
-    bcf TRISB, 1
     bcf TRISB, 2
     bcf TRISB, 3
-    bcf TRISB, 6
     btfsc multiplexado, 0
     goto display2A
+    
+    bcf TRISB, 0
+    bcf TRISB, 1
+    bcf TRISB, 6
     btfsc multiplexado, 1    
     goto display3B
     btfsc multiplexado, 2
@@ -253,7 +254,7 @@ main:
     movf display+2
     movwf PORTD
     bsf TRISB, 1
-    goto toggle1
+    goto toggle3
     
     display2B:
     movf display+3,0
@@ -265,12 +266,11 @@ main:
     movf display+4,0
     movwf PORTD
     bsf TRISB, 0
-    goto toggle3
+    goto toggle1
     
     toggle:
     movlw 1
     xorwf multiplexado, 1	
-
     
     toggle1:
     movlw 00000110B
@@ -303,7 +303,7 @@ main:
     movwf residuo1, 1
     movlw 100
     addwf residuo1			    
-   
+    
     movlw 10				  
     subwf residuo1, 0
     btfss STATUS, 0
@@ -314,7 +314,5 @@ main:
     movlw 10
     addwf unidades
     return
-    
-    
     
 END
