@@ -236,6 +236,7 @@ main:
     bcf PORTB, 6
     btfsc multiplexado, 0	;Si pin 0 esta en 1, ir a display2A
     goto display2A
+    ;goto display1A
     btfsc multiplexado, 1	;Si pin 1 esta en 1, ir a display3B
     goto display3B
     btfsc multiplexado, 2	;Si pin 2 esta en 1, ir a display2B

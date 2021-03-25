@@ -181,7 +181,7 @@ main:
 	movwf PORTC	    ;Mover resultados a PORTC (ubicación de display)
 	
 	;DISPLAY 2 - TMR0
-	call incremento1000ms	;Llamar a subrutina para incrementar cada 1000ms
+	call incremento1000ms	    ;Llamar a subrutina para incrementar cada 1000ms
 	movf contador_display, 0    ;Moviendo datos en variable a W
 	call Convertidor	    ;Llamando subrutina para traducir datos anteriores
 	movwf PORTD		    ;Moviendo resultados a PORTD (ubicacion de display)
@@ -211,7 +211,7 @@ main:
     return
     
     incremento1000ms:
-    movlw 50		;Valor necesario para incremento de 1000ms
+    movlw 50		    ;Valor necesario para incremento de 1000ms
     subwf contador20ms, 0   ;Restar valor en W con valor en contador20ms
     btfss STATUS, 2	    ;Revisar bandera Z
     return		    ;Si no es cero no incrementa variable para display 2
