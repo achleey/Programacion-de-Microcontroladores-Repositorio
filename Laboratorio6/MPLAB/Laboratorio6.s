@@ -7,7 +7,7 @@
 ;Hardware: Display en PORTC, LED en RA0 y Transistores en RE0 y RE1
 ;
 ;Creado: 23 marzo, 2021
-;Última modiciación: 
+;Última modiciación: Sábado 27 de marzo de 2021
    
 PROCESSOR 16F887		;Incluyendo microcontrolador y librerias utiles
 #include <xc.inc>    
@@ -29,18 +29,15 @@ CONFIG WRT=OFF	    ;Protección de autoescritura para programa desactivado
 CONFIG BOR4V=BOR40V ;Reset si Vdd < 4V (BOR21v=2.1V)
   
 ;VARIABLES   
-    GLOBAL IncrementoT1 
-    GLOBAL Unidades
-    GLOBAL Decenas
-    GLOBAL Resta
     PSECT udata_shr	;Memoria común
     W_TEMP: DS 1	;Registro temporal para W
     STATUS_TEMP: DS 1	;Registro temporal para STATUS 
     IncrementoT1: DS 1	;Variable que aumenta con Timer1
     Multiplexado: DS 1	;Bandera para multiplexado
-    Unidades: DS 1 
-    Decenas: DS 1
-    Resta: DS 1
+    Unidades: DS 1	;Variable para guardar las unidades de la variable IncrementoT1
+    Decenas: DS 1	;Variable para guardar las decenas de la variable IncrementoT1
+    Resta: DS 1		;Variable para guardar el resultado de la resta
+    Led: DS 1		;Variable para condicionar displays en funcion del estadoo de la led
 
 ;VECTOR RESET 
     PSECT resVect, class=code, abs, delta=2
@@ -60,11 +57,11 @@ CONFIG BOR4V=BOR40V ;Reset si Vdd < 4V (BOR21v=2.1V)
     
     isr: 
     btfsc PIR1, 0	    ;Si la bandera de Timer1 no se ha levantado, saltar
-    call reinicio_timer1
+    call reinicio_timer1   
     btfsc PIR1, 1	    ;Si la bandera de Timer2 no se ha levantado, saltar
     call reinicio_timer2
     btfsc INTCON, 2	    ;Si la bandera de Timer0 no se ha levantado, saltar
-    call reinicio_timer0
+    call Toggle
     
     pop:
     swapf STATUS_TEMP, W    ;Mover datos en STATUS_TEMP a W
@@ -76,26 +73,28 @@ CONFIG BOR4V=BOR40V ;Reset si Vdd < 4V (BOR21v=2.1V)
 ;SUBRUTINAS DE INTERRUPCIÓN
     reinicio_timer1:
     banksel PORTA
-    movlw 0xE1
+    movlw 0xE1		    ;Cargar valor en TMR1H para una interrupcion cada segundo
     movwf TMR1H
-    movlw 0x7B
+    movlw 0x7C		    ;Cargar valor en TMR1L para una interrupcion cada segundo
     movwf TMR1L
-    incf IncrementoT1, 1
-    bcf PIR1, 0
+    incf IncrementoT1	    ;Incrementar variable   
+    bcf PIR1, 0		    ;Bajar bandera de Timer1 Overflow 
     return
     
     reinicio_timer2:
     banksel PORTA
-    incf PORTA
-    bcf PIR1, 1
+    incf PORTA		    ;Incrementar PORTA, de esta forma se hará titilar la led
+    movf PORTA, 0	    ;Mover el valor en PORTA a variable Led
+    movwf Led
+    bcf PIR1, 1		    ;Bajar bandera de Timer2 Overflow
     return
+    
     
     reinicio_timer0:
     banksel PORTA
-    movlw 248		;Valor de temporizador para interrupción cada 2ms
+    movlw 255		;Valor de temporizador para interrupción cada 2ms
     movwf TMR0		;Cargando valor a Timer0
     bcf INTCON, 2	;Bajar la bandera de Overflow Interrupt para Timer0
-    call Toggle
     return
     
 ;MICROCONTROLADOR
@@ -105,7 +104,7 @@ CONFIG BOR4V=BOR40V ;Reset si Vdd < 4V (BOR21v=2.1V)
     Convertidor: 
     clrf PCLATH
     bsf PCLATH, 0	;Eligiendo posición 0100h
-    andlw 00001111B
+    andlw 0x0f
     addwf PCL		;PC = PCLATH + PCL
     retlw 00111111B	;0
     retlw 00000110B	;1
@@ -117,7 +116,13 @@ CONFIG BOR4V=BOR40V ;Reset si Vdd < 4V (BOR21v=2.1V)
     retlw 00000111B	;7
     retlw 01111111B	;8
     retlw 01101111B	;9
-    
+    retlw 01110111B	;A
+    retlw 01111111B	;B
+    retlw 00111001B	;C
+    retlw 00111111B	;D
+    retlw 01111001B	;E
+    retlw 01110001B	;F
+
 ;SETUP
 main:
     
@@ -176,10 +181,10 @@ main:
 	;TIMER1 INTERRUPT
 	bcf PIR1, 0	;Bajando Timer1 Overflow IF
 	clrf TMR1H	;Limpiando TMR1H
-	movlw 0xE1
+	movlw 0xE1	;Cargar valor en TMR1H para una interrupcion cada segundo
 	movwf TMR1H
 	clrf TMR1L	;Limpiando TMR1L
-	movlw 0x7B
+	movlw 0x7B	;Cargar valor en TMR1L para una interrupcion cada segundo
 	movwf TMR1L
 	bsf INTCON, 7	;Habilitando las interrupciones globales
 	bsf INTCON, 6	;Habilitando interrupciones perifericas
@@ -202,7 +207,7 @@ main:
 	;TIMER2 INTERRUPT
 	bcf PIR1, 1	;Bajando Timer2 Overflow IF
 	clrf TMR2	;Limpiando TMR2
-	movlw 61
+	movlw 61	;Cargando valor en PR2 para una interrupción cada 250ms
 	movwf PR2
 	banksel PIE1
 	bsf PIE1, 1	;Habilitando la interrupción del Timer2
@@ -210,58 +215,57 @@ main:
 banksel PORTA
 	
 ;MAIN LOOP	
-    loop:
-    call Division
+    loop:    
+    call Division	;Llamar subrutina para convertir a decimal
     goto loop
 
-;SUBRUTINAS
+;SUBRUTINAS 
     
     Division:
-    clrf Decenas		    
-    movf IncrementoT1, 0	    
-    movwf Resta			    
-    movlw 10			    
-    subwf Resta, 0		    
-    btfss STATUS, 0		    
-    incf Decenas		    
-    btfss STATUS, 0		    
-    movwf Resta			    
-    btfsc STATUS, 0		    
-    goto $-7			    
-
-    clrf Unidades		    
-    movlw 1			     
-    subwf Resta, 0
-    btfss STATUS, 0
-    incf Unidades
-    btfsc STATUS, 0
+    clrf Decenas	;Limpiamos los registros a utilizar 
+    clrf Unidades
+    clrf Resta
+    movf IncrementoT1, 0    ;Trasladamos valor en IncrementoT1 a resta 
+    movwf Resta
+    movlw 10		;Mover valor 10 a W
+    subwf Resta, f	;Restamos W y Resta, lo guardamos en el registro
+    btfsc STATUS, 0	;Si la bandera no se levanto, no saltar
+    incf Decenas	;Incrementar decenas
+    btfsc STATUS, 0	;Si la bandera no se levanto, no saltar
+    goto $-5		;Repetir hasta que ya no hayan decenas
+    movlw 10		;Evitar que haya un overlap (00h - FFh)
+    addwf Resta	
+    movf Resta, 0	;Trasladar valor restante a unidades
+    movwf Unidades
+    btfss STATUS, 0	;Saltar si la bandera esta abajo
     return
-    goto $-6
     
-     
     Toggle: 
-    bcf PORTE, 0
+    call reinicio_timer0    ;Reiniciar Timer0
+    bcf PORTE, 0	    ;Apagar transistores
     bcf PORTE, 1
-    btfsc Multiplexado, 1
-    goto D1
+    btfsc Multiplexado, 1   ;Si el bit 1 de Multiplexado esta en cero, saltar e ir a D2
+    goto D1		    ;De lo contrario ir a D1
     
     D2: 
-    bsf Multiplexado, 0
-    movf Unidades, 0
-    call Convertidor
-    movwf PORTC
-    bsf PORTE, 1
-    bcf PORTE, 0
+    btfss Led, 0	    ;Si la led esta apagada, saltar displays
+    return
+    bsf Multiplexado, 1	    ;Poner en 1 el bit 1 de Multiplexado para que se diriga a D1 cuando entre nuevamente
+    movf Unidades, 0	    ;Trasladar a W el valor de unidades
+    call Convertidor	    ;Traducir valor
+    movwf PORTC		    ;Mostrar en display
+    bsf PORTE, 1	    ;Encender transistor para encender display
     return
     
     D1:
-    bsf Multiplexado, 1
-    bcf Multiplexado, 0
-    movf Decenas, 0
-    call Convertidor
-    movwf PORTC
-    bsf PORTE, 0
-    bcf PORTE, 1
+    btfss Led, 0	    ;Si la led esta apagada, saltar displays
     return
-
+    bcf Multiplexado, 1	    ;Poner en 0 el bit 1 de Multiplexado para que se diriga a D2 cuando vuelva a entrar
+    movf Decenas, 0	    ;Mover a W el valor de decenas
+    call Convertidor	    ;Traducir valor
+    movwf PORTC		    ;Mostrar en display
+    bsf PORTE, 0	    ;Encender transistor para encender display
+    return  
+    
+    
 END

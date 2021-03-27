@@ -88,7 +88,7 @@ Oscilador macro
  ;OSCILADOR
     banksel OSCCON
     bsf SCS	;Eligiendo oscilador interno
-    bcf IRCF2	;Eligiendo oscilador interno de 250kHz
+    bsf IRCF2	;Eligiendo oscilador interno de 4MHz
     bsf IRCF1	
     bcf IRCF0
 
