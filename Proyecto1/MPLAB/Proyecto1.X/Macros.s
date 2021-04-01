@@ -88,7 +88,7 @@ Oscilador macro
  ;OSCILADOR
     banksel OSCCON
     bsf SCS	;Eligiendo oscilador interno
-    bsf IRCF2	;Eligiendo oscilador interno de 4MHz
+    bcf IRCF2	;Eligiendo oscilador interno de 250kHz
     bsf IRCF1	
     bcf IRCF0
 
@@ -110,4 +110,43 @@ Interrupcion_Timer0 macro
 	    clrf TMR0		;Inicializando Timer0
 	    bcf INTCON, 2	;Bajando bandera de Timer0 Overflow Interrupt
 	    
+endm
+	    
+Interrupcion_Timer1 macro
+    ;TIMER1
+    banksel T1CON
+    bcf T1CON, 1	;Eligiendo oscilador interno
+    bsf T1CON, 0	;Habilitando Timer1
+	
+	;PSA
+	bsf T1CON, 4	;Eligiendo un PSA de 1:8
+	bsf T1CON, 5
+	
+	;TIMER1 INTERRUPT
+	bcf PIR1, 0	;Bajando Timer1 Overflow IF
+	clrf TMR1H	;Limpiando TMR1H
+	movlw 0xE1	;Cargar valor en TMR1H para una interrupcion cada segundo
+	movwf TMR1H
+	clrf TMR1L	;Limpiando TMR1L
+	movlw 0x7B	;Cargar valor en TMR1L para una interrupcion cada segundo
+	movwf TMR1L
+	banksel PIE1
+	bsf PIE1, 0	;Habilitando la interrupcion del Timer1    
+endm
+	
+Tiempo_Semaforos_Modo1 macro
+    ;VIA 1
+    movlw 10
+    movwf Tiempo1M1
+    movlw 20
+    movwf Tiempo2M1
+    movlw 30 
+    movwf Tiempo3M1
+endm
+    
+Interrupt_On_Change macro
+ ;INTERRUPT-ON-CHANGE
+	bcf INTCON, 0		;Bandera Change Interrupt esta abajo
+	bsf INTCON, 3		;Activando change interrupt en el PORTB
+	bsf IOCB, 4		;Interrupt-on-change activado para RB4
 endm
