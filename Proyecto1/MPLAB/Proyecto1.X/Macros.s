@@ -136,12 +136,15 @@ endm
 	
 Tiempo_Semaforos_Modo1 macro
     ;VIA 1
-    movlw 10
+    movlw 11
     movwf Tiempo1M1
-    movlw 20
+    movlw 21
     movwf Tiempo2M1
-    movlw 30 
+    movlw 31 
     movwf Tiempo3M1
+    movlw 10
+    movwf TiempoM2
+
 endm
     
 Interrupt_On_Change macro
@@ -149,4 +152,6 @@ Interrupt_On_Change macro
 	bcf INTCON, 0		;Bandera Change Interrupt esta abajo
 	bsf INTCON, 3		;Activando change interrupt en el PORTB
 	bsf IOCB, 4		;Interrupt-on-change activado para RB4
+	bsf IOCB, 5
+	bsf IOCB, 6
 endm
