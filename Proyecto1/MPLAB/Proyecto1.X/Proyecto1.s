@@ -34,6 +34,7 @@ CONFIG BOR4V=BOR40V         ;Reset si Vdd < 4V (BOR21v=2.1V)//</editor-fold>
 //<editor-fold defaultstate="collapsed" desc="Variables">
     
     PSECT udata_bank0
+    Nuevo_valor: DS 1
     R: DS 1
     Tiempo1M2Final: DS 1
     Tiempo2M3Final: DS 1
@@ -250,14 +251,6 @@ reinicio_timer1:
     decf TiempoM2
     bcf INTCON, 0
     return
-    
-    ;V2:
-    ;btfss PORTB, 5
-    ;incf Tiempo2M2
-    ;btfss PORTB, 6
-    ;decf Tiempo2M2
-    ;bcf INTCON, 0
-    ;return
     //</editor-fold>
 
 ;MICROCONTROLADOR
@@ -319,25 +312,46 @@ loop:
     subwf modo_numero_, 0
     btfsc STATUS, 2
     call Modo5
+    movlw 5
+    subwf modo_numero_, 0
+    btfsc STATUS, 2
+    call babylavidaesunciclo
     call Division
     goto loop
     //</editor-fold>
 
 ;SUBRUTINAS
+babylavidaesunciclo:
+    clrf modo_numero_
+    clrf Tiempo1M1
+    clrf Tiempo2M1
+    clrf Tiempo3M1
+    movlw 10
+    movwf Tiempo1M1
+    movlw 20
+    movwf Tiempo2M1
+    movlw 30
+    movwf Tiempo3M1
+    movlw 10
+    movwf TiempoM2
+    bcf PORTB, 1
+    bcf PORTB, 2
+    return
+    
 //<editor-fold defaultstate="collapsed" desc="Modo 5">
 Modo5:
-    ;aceptar = incrementar
-    ;cancelar = decrementar
+    bcf R, 0
     bcf Multiplexado_modos, 0
     bcf Multiplexado_modos, 1
     bcf Multiplexado_modos, 2
     bsf PORTB, 1		;Aceptar
     bsf PORTB, 2		;Cancelar
     bcf PORTB, 3
-    btfss PORTB, 5
-    goto Secuencia_reset
-    call Semaforos
-    bcf R, 0
+    btfss PORTB, 5		;Boton aceptar
+    call Nuevo_tiempo
+    return
+    btfss PORTB, 6
+    call Cancelar
     return
     //</editor-fold>
 
@@ -392,8 +406,8 @@ Modo3:
     btfsc STATUS, 2
     call TopeC
     bsf PORTB, 1
-    movf TiempoM2, 0
-    movwf Tiempo1M2Final
+    movf TiempoM2, 0			    ;Tiempo M2 - V1, V2, V3, 00
+    movwf Tiempo1M2Final		    ;V1 = configuraste V1
     bsf Multiplexado_modos, 0
     bsf Multiplexado_modos, 1
     bsf Multiplexado_modos, 2
@@ -528,34 +542,45 @@ TopeS:
     movlw 0		    ;Si el tiempo en Tiempo1M1 es 0, entonces:
     subwf Tiempo1M1, 0
     btfsc STATUS, 2
-    movlw 30		    ;Asignar tiempo de espera a la vía 1
-    btfsc STATUS, 2
+    call T1	    ;Asignar tiempo de espera a la vía 1
     movwf Tiempo1M1
-    btfsc STATUS, 2
     bsf PORTA, 0	    ;Encender led roja
     
     ;SEMAFORO 2
     movlw 0		    ;Si el tiempo en Tiempo2M1 es 0, entonces:
     subwf Tiempo2M1, 0
     btfsc STATUS, 2
-    movlw 30		    ;Asignar tiempo de espera a la vía 2
-    btfsc STATUS, 2
+    call T2		    ;Asignar tiempo de espera a la vía 2
     movwf Tiempo2M1
-    btfsc STATUS, 2
     bsf PORTA, 3	    ;Encender led roja
     
     ;SEMAFORO 3
     movlw 0		    ;Si el tiempo en Tiempo3M1 es 0, entonces:
     subwf Tiempo3M1, 0
     btfsc STATUS, 2
-    movlw 30		    ;Asignar tiempo de espera a la vía 3
-    btfsc STATUS, 2
+    call T3		    ;Asignar tiempo de espera a la vía 3
     movwf Tiempo3M1
-    btfsc STATUS, 2
     bsf PORTA, 6	    ;Encender led roja
-    call Division	    ;Llamar subrutina para convertir a decimal
-    return//</editor-fold>
+    ;call Division	    ;Llamar subrutina para convertir a decimal
+    return
 
+T1:
+    movf Tiempo2M1, 0
+    addwf Tiempo3M1, 0
+return
+    
+T2:
+    movf Tiempo1M1, 0
+    addwf Tiempo3M1, 0
+return
+    
+T3:
+    movf Tiempo2M1, 0
+    addwf Tiempo1M1, 0
+return
+    
+//</editor-fold>
+    
 //<editor-fold defaultstate="collapsed" desc="Tope Configuracion de Tiempos">
 TopeC:
     movlw 9
@@ -644,17 +669,40 @@ Division:
 //<editor-fold defaultstate="collapsed" desc="Reset">
 Secuencia_reset:
     clrf TiempoM2
+    clrf Tiempo1M1
+    clrf Tiempo2M1
+    clrf Tiempo3M1
     bsf Multiplexado_modos, 0
     bsf Multiplexado_modos, 1
     bsf Multiplexado_modos, 2
     bsf Multiplexado, 5
     bsf R, 0
-    bsf PORTA, 0
-    bsf PORTA, 3
-    bsf PORTA, 6
+    clrf PORTA 
+    movlw 001001001B
+    movwf PORTA
     bcf PORTB, 1
     bcf PORTB, 2
     return//</editor-fold>
 
- 
+//<editor-fold defaultstate="collapsed" desc="Tiempos Nuevos">
+Nuevo_tiempo:
+    call Secuencia_reset
+    movf Tiempo1M2Final, 0	
+    movwf Tiempo1M1		
+    movf Tiempo2M3Final, 0
+    addwf Tiempo1M1, 0
+    movwf Tiempo2M1
+    movf Tiempo3M4Final, 0
+    addwf Tiempo2M1, 0
+    movwf Tiempo3M1
+    return//</editor-fold>
+    
+//<editor-fold defaultstate="collapsed" desc="Cancelar">
+Cancelar:
+    movlw 10
+    movwf TiempoM2
+    return//</editor-fold>
+
 	END
+
+	

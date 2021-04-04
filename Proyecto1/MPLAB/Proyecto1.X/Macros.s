@@ -136,12 +136,12 @@ endm
 	
 Tiempo_Semaforos_Modo1 macro
     ;VIA 1
-    movlw 11
-    movwf Tiempo1M1
-    movlw 21
-    movwf Tiempo2M1
-    movlw 31 
-    movwf Tiempo3M1
+    movlw 10			
+    movwf Tiempo1M1		   
+    movlw 20 		    
+    movwf Tiempo2M1		    
+    movlw 30   
+    movwf Tiempo3M1		   
     movlw 10
     movwf TiempoM2
 
